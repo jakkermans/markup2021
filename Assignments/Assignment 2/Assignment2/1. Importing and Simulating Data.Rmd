@@ -1,0 +1,17 @@
+---
+title: "1. Importing and simulating data"
+author: "Jannick Akkermans (1727324)"
+date: "29-9-2021"
+output: html_document
+---
+
+```{r}
+wheather_data <- read.table("Data/wheather_complete2.txt", sep = " ") #Load in the data
+
+#Save the dataset
+save.image(file = "Workspaces/Australian_wheather.RData")
+```
+
+```{r}
+sessionInfo()
+```

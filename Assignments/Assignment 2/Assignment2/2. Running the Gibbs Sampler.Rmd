@@ -1,0 +1,149 @@
+---
+title: "2. Running the Gibbs sampler"
+author: "Jannick Akkermans (1727324)"
+date: "29-9-2021"
+output: html_document
+---
+
+# 1. Aim
+
+The aim of this experiment is to explore the level of bias in a self-programmed Gibbs sampler. 
+
+# 2. Setup
+
+## 2.1 Loading in the data
+
+```{r}
+#load in the image from the previous file
+load("Workspaces/Australian_wheather.RData")
+```
+
+## 2.2 Creating the Gibbs sampler
+
+```{r}
+gibbs_sampler <- function(pred1, pred2, out, n.iter, n.chains, burn_in) {
+  ##This function conducts Gibb's sampling based on a regression model with one outcome variable and 2 predictors. #It samples new values for the regression coefficients in each iteration and subsequently stores those in a matrix. For each chain, the full matrix is stored so that convergence can be evaluated afterwards.
+  
+  #create storage for the results of the different chains
+  matrices <- list()
+  
+  #Specify the initial values
+  initial_betas <- list(c(2.4,-0.10,0.09), c(-2,0.30,-0.25))  
+  m0.prior <- 0
+  m1.prior <- 0
+  m2.prior <- 0
+  s0.prior <- 1000
+  s1.prior <- 1000
+  s2.prior <- 1000
+  a.prior <- 0.001
+  b.prior <- 0.001
+  tm.prior <- 0
+  ts.prior <- 1000
+  df <- 1
+  
+  for (chain in 1:n.chains) {
+    #create storage for the results of the current chain
+    
+    #Assign the initial values to the parameters
+    var <- rep(0,n.iter)
+    b0 <- rep(0,n.iter)
+    b1 <- rep(0,n.iter)
+    b2 <- rep(0,n.iter)
+    var[1] <- 1
+    b0[1] <- initial_betas[[chain]][1]
+    b1[1] <- initial_betas[[chain]][2]
+    b2[1] <- initial_betas[[chain]][3]
+    
+    for (i in 2:n.iter) {
+      m0.post <- ((sum(out - b1[i-1]*pred1 - b2[i-1]*pred2)/var[i-1]) + (m0.prior/s0.prior)) / ((length(out) / var[i-1]) + (1 / s0.prior)) #Posterior mean of b0
+      s0.post <- 1 / ((length(out) / var[i-1]) + (1 / s0.prior)) #Posterior variance of b0
+      b0[i] <- rnorm(1, m0.post, sqrt(s0.post)) #Sample new value for b0
+      
+      m1.post <- ((sum(pred1*(out - b0[i] - b2[i-1]*pred2)) / var[i-1]) + (m1.prior / s1.prior)) / ((sum(pred1^2) / var[i-1]) + (1 / s1.prior)) #Posterior mean of b1
+      s1.post <- 1 / ((sum(pred1^2) / var[i-1]) + (1 / s1.prior)) #Posterior variance of b1
+      b1[i] <- rnorm(1, m1.post, sqrt(s1.post)) #Sample new value for b1
+      
+      #m2.post <- ((sum(pred2*(out - b0[i] - b1[i]*pred1)) / var[i-1]) + (m2.prior / s2.prior)) / ((sum(pred2^2) / var[i-1]) + (1 / s2.prior)) #Posterior mean of b2
+      #s2.post <- 1 / ((sum(pred2^2) / var[i-1]) + (1 / s2.prior)) #Posterior variance of b2
+      #b2[i] <- rnorm(1, m2.post, sqrt(s2.post)) #Sample new value for b2
+      b2_star <- rnorm(1, mean = b2[i-1], sd = 0.1)
+      u <- runif(1,0,1)
+      
+      b2_post <- exp(-(b2[i-1]^2)*(sum(pred2^2)/(2*var[i-1]))) + (b2[i-1]*(sum(pred2*(out - b0[i] - b1[i]*pred1))/var[i-1])) * (1 + ((b2[i-1] - tm.prior)^2/(df*(ts.prior^2))))^(-((df+1)/2))
+      
+      b2star_post <- exp((-(b2_star^2)*(sum(pred2^2)/(2*var[i-1]))) + (b2_star*(sum(pred2*(out - b0[i] - b1[i]*pred1))/var[i-1]))) * (1 + ((b2_star - tm.prior)^2/(df*(ts.prior^2))))^(-((df+1)/2))
+      
+      r <- (b2star_post/b2_post)*(b2[i-1]/b2_star)
+      b2[i] <- ifelse(u <= r, b2_star, b2[i-1])
+      
+      a.post <- (length(out) / 2) + a.prior #Posterior shape of variance
+      b.post <- b.prior + (sum((out - b0[i] + b1[i]*pred1 + b2[i]*pred2)^2) / 2) #Posterior rate of variance
+      var[i] <- 1/rgamma(1, shape = a.post, rate = b.post) #Sample new value for variance
+      
+    }
+    matrices[[chain]] <- cbind(b0[-(1:burn_in)], b1[-(1:burn_in)], b2[-(1:burn_in)], var[-(1:burn_in)]) #Store all the sampled values for b0, b1 and b2 of the current chain but remove the burn-in period
+  }
+  return(matrices) #Return the sampled values for b0, b1, and b2 of the different chains
+}
+```
+
+# 3. Sampling observations
+
+```{r}
+set.seed(123)
+wheather_obs <- wheather_data[sample(seq(1,nrow(wheather_data),1),2000),]
+```
+
+# 4. Obtaining the estimates
+
+```{r}
+samples <- gibbs_sampler(pred1 = wheather_obs$MaxTemp.cen, pred2 = wheather_obs$WindGustSpeed.cen, out = wheather_obs$Rainfall, n.iter = 10000, n.chains = 2, burn_in = 1000) #running the Gibbs sampler (might take a while, sorry!)
+
+full_matrix <- rbind(samples[[1]], samples[[2]])
+colnames(full_matrix) <- c("Intercept", "MaxTemp.cen", "WindGustSpeed.cen", "variance")
+colMeans(full_matrix)
+
+test_lm <- lm(Rainfall ~ MaxTemp.cen + WindGustSpeed.cen, data = wheather_obs)
+summary(test_lm)
+```
+# 5. Calculate absolute bias
+
+```{r}
+true_estimates <- summary(test_lm)$coefficients[,1]
+abs(colMeans(full_matrix[,1:3]) - true_estimates) #absolute bias
+```
+As you can see, the absolute bias is very minimal. This indicates that this Gibbs sampler produces very reliable estimates.
+
+# 6. Sampling observations with a new seed
+
+```{r}
+set.seed(234)
+
+wheather_obs2 <- wheather_data[sample(seq(1,nrow(wheather_data),1),2000),]
+```
+
+# 7. Obtaining replicated estimates
+
+```{r}
+samples2 <- gibbs_sampler(pred1 = wheather_obs2$MaxTemp.cen, pred2 = wheather_obs2$WindGustSpeed.cen, out = wheather_obs2$Rainfall, n.iter = 10000, n.chains = 2, burn_in = 1000) #running the Gibbs sampler (might take a while, sorry!)
+
+full_matrix2 <- rbind(samples2[[1]], samples2[[2]])
+colnames(full_matrix2) <- c("Intercept", "MaxTemp.cen", "WindGustSpeed.cen", "variance")
+colMeans(full_matrix2)
+
+summary(test_lm)
+```
+
+# 8. Calculate absolute bias
+
+```{r}
+abs(colMeans(full_matrix2[,1:3]) - true_estimates)
+```
+As you can see, the amount of bias has increased. Still, the bias is quite minimal and these results are partly due to a different seed used. In the end, this Gibbs sampler produces reliable results.
+
+# END OF DOCUMENT
+
+```{r}
+save.image("Workspaces/Gibbs_data.RData")
+sessionInfo()
+```
