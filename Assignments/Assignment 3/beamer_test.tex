@@ -1,0 +1,91 @@
+\documentclass[aspectratio=169]{beamer}
+\usecolortheme{beaver}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\beamertemplatenavigationsymbolsempty
+
+\title{Example document to recreate with \texttt{beamer} in \LaTeX}
+\author{Jannick Akkermans}
+
+\begin{document}
+\begin{frame}[plain]
+  \titlepage
+  \vfill
+  \begin{center}
+  FALL 2019\\
+  Markup Languages and Reproducible Programming in Statistics
+  \end{center}
+\end{frame}
+
+
+\begin{frame}{Outline}
+Working with equations\\
+\hspace{4mm} Aligning the same equations\\
+\hspace{4mm} Omit equation numbering\\
+\hspace{4mm} Ugly alignment\\
+
+\vspace{10mm}
+Discussion
+\end{frame}
+
+\begin{frame}{Working with equations}
+We define a set of equations as
+\begin{equation}
+  a = b + c^2,
+\end{equation}
+\begin{equation}
+  a - c^2 = b,
+\end{equation}
+\begin{equation}
+  \text{left side} = \text{right side},
+\end{equation}
+\begin{equation}
+  \text{left side} + \text{something} \geq \text{right side},
+\end{equation}
+
+for all something $>$ 0.
+\end{frame}
+
+\begin{frame}{Aligning the same equations}
+Aligning the equations by the equal sign gives a much better view into the placements of the seperate equation components.
+\begin{align}
+a &= b + c^2,\\
+a - c^2 &= b,\\
+\text{left side} &= \text{right side},\\
+\text{left side} + \text{something} & \geq \text{right side},
+\end{align}
+\end{frame}
+
+\begin{frame}{Omit equation numbering}
+Alternatively, the equation numbering can be omitted.
+\begin{align*}
+a &= b + c^2,\\
+a - c^2 &= b,\\
+\text{left side} &= \text{right side},\\
+\text{left side} + \text{something} & \geq \text{right side},
+\end{align*}
+\end{frame}
+
+\begin{frame}{Ugly alginment}
+Some components do not look well, when aligned. Especially equations with different heights and spacing. For example,
+\begin{align}
+E &= mc^2,\\
+m &= \frac{E}{c^2},\\
+c &= \sqrt{\frac{E}{m}}.
+\end{align}
+Take that into account.
+\end{frame}
+
+\begin{frame}{Discussion}
+This is where you'd normally give your audience a recap of your talk, where you could discuss e.g. the following
+\begin{itemize}
+\item Your main findings
+\item The consequences of your main findings
+\item Things to do
+\item Any other business not currently investigated, but related to your talk
+\end{itemize}
+\end{frame}
+\end{document}
