@@ -1,0 +1,138 @@
+---
+title: "Wow! The beauty of friesland"
+author: "Jannick Akkermans (1727324)"
+date: "24-11-2021"
+output: 
+  ioslides_presentation:
+    keep_tex: true
+    logo: Flag-of-Friesland.png
+always_allow_html: true
+classoption: "aspectratio=169"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+if(!require(dplyr)){install.packages("dplyr")}
+if(!require(tidyverse)){install.packages("tidyverse")}
+if(!require(devtools)){install.packages("devtools")}
+if(!require(plotly)){devtools::install_github('hadley/ggplot2')}
+if(!require(scales)){install.packages("scales")}
+if(!require(DT)){install.packages("DT")}
+if(!require(plotly)){install.packages("plotly")}
+if(!require(bibtex)){install.packages("bibtex")}
+```
+
+## Overview
+
+- The flag of Friesland
+- General feeling of unsafety in Friesland
+- Statistics about Friesland
+- Pros and Cons of Friesland
+- A beautiful equation
+- R-code, displayed buyt not executed
+- Cached R-code
+- R-code, executed, but not displayed
+- Reference list
+
+## The flag of Friesland
+
+<center>
+![](Flag-of-Friesland.png){width=50%}
+</center>
+
+
+## General feeling of unsafety in Friesland
+
+```{r, echo = FALSE}
+dat <- read.csv("_On_veiligheidsbeleving__regio__24112021_093915.csv", sep = ";", header = F)
+dat <- dat[6,c(3:ncol(dat))]
+
+dat <- as.data.frame(t(dat))
+colnames(dat) <- "Unsafety"
+dat$year <- c("2012", "2013", "2014", "2015", "2016", "2017", "2019")
+dat$Unsafety <- gsub(",", ".", dat$Unsafety)
+dat$Unsafety <- as.numeric(dat$Unsafety)
+
+p <- ggplot(dat, aes(x = year, y = Unsafety, fill = year)) +
+  geom_col() +
+  ylim(c(0,31))
+
+ggplotly(p)
+```
+
+## Statistics about Friesland
+
+```{r echo = FALSE}
+municipalities <- c("Achtkarspelen", "Ameland", "Dantumadeel/Dantumadiel", "De Friese Meren/De Fryske Marren", "Harlingen", "Heerenveen", "Leeuwarden", "Noardeast-Fryslân", "Ooststellingwerf", "Opsterland", "Schiermonnikoog", "Smallingerland", "Súdwest-Fryslân", "Terschelling", "Tietjerksteradeel/Tytsjerksteradiel", "Vlieland", "Waadhoeke", "Weststellingwerf")
+residents <- c(27875, 3785, 18977, 51856, 15878, 50859, 124639, 45431, 25566, 29847, 937, 55896, 90138, 4894, 32166, 1226, 46327, 26209)
+sizes <- c(102.23, 59.11, 84.66, 351.29, 24.96, 190.09, 238.38, 377.83, 223.42, 224.40, 40.50, 117.31, 523.01, 85.26, 148.86, 39.15, 284.86, 220.30)
+
+friesland_dat <- data.frame("Municipality" = municipalities, "Number of residents" = residents, "Size in m2" = sizes)
+datatable(friesland_dat, options = list(pageLength = 5), caption = "Municipalities in Friesland")
+```
+
+## Pros and Cons of Friesland {.columns-2}
+
+<div style="overflow: hidden">
+<ul>
+  <li>Very peaceful</li>
+  <li>Friendly people</li>
+  <li>Lots of agriculture etc. </li>
+  <li>Lots of opportunities for leisure activities </li>
+</ul>
+</div>
+
+
+<div style="overflow: hidden">
+<ul>
+  <li>No metros/trams I guess </li>
+  <li>Long biking distances to school </li>
+  <li>No Elfstedentocht</li>
+</ul>
+</div>
+
+## A meaningful equation
+
+<script type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_CHTML"></script>
+
+$$
+\begin{aligned}
+\bar{y}_{residents} &= \frac{\sum^{n}_{i = 1}y_i}{N}\\
+&= \frac{652506}{18}\\
+&= 36250.33
+\end{aligned}
+$$
+
+## R-Code, Displayed But Not Executed
+
+```{r, eval = F, echo = T}
+friesland_dat %>%
+  filter(residents >= 10000) %>%
+  summarise("Big Municipalities" = n())
+```
+
+## Cached R-code
+
+```{r, cache=TRUE}
+nrow(friesland_dat)
+ncol(friesland_dat)
+head(friesland_dat)
+```
+
+## R-code, executed, but not displayed
+
+```{r, eval = TRUE, echo=FALSE}
+friesland_dat %>%
+  ggplot(aes(x = sizes, y = residents)) +
+  geom_point() +
+  ggtitle("Sizes and number of residents of municipalities in Friesland") +
+  labs(y="Number of residents", x = "Size of municipality")
+```
+
+## Reference list
+
+```{r, echo = FALSE, eval=TRUE}
+bib <- read.bib("references.bib")
+bib
+```
